@@ -4,11 +4,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/tal-tech/go-zero/core/timex"
 	"github.com/tal-tech/go-zero/core/trace/tracespec"
 )
+
+var traceContent = []string{
+	"level", "@timestamp", "trace", "duration", sourceDir, "content",
+}
+
+const sourceDir = "source"
 
 type traceLogger struct {
 	logEntry
@@ -64,7 +71,34 @@ func (l *traceLogger) write(writer io.Writer, level, content string) {
 	l.Content = content
 	l.Trace = traceIdFromContext(l.ctx)
 	l.Span = spanIdFromContext(l.ctx)
-	outputJson(writer, l)
+	outputTrace(writer, l)
+}
+
+func outputTrace(writer io.Writer, l *traceLogger) {
+	buf := strings.Builder{}
+	mp := Convert2Map(l)
+
+	for _, k := range traceContent {
+		if k == sourceDir {
+			buf.WriteString(FileWithLineNum())
+			buf.WriteString(" ")
+			continue
+		}
+
+		if v, ok := mp[k]; ok {
+			if s, ok := v.(string); ok {
+				buf.WriteString(s)
+			} else {
+				buf.WriteString(JsonMarshal(v))
+			}
+			buf.WriteString(" ")
+		} else {
+			buf.WriteString("- ")
+		}
+	}
+
+	s := buf.String()
+	writer.Write([]byte(s))
 }
 
 func WithContext(ctx context.Context) Logger {
