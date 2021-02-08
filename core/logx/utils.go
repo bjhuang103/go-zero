@@ -19,7 +19,8 @@ func FileWithLineNum() string {
 	for i := 1; i < 15; i++ {
 		_, file, line, ok := runtime.Caller(i)
 
-		if ok && ((!strings.HasPrefix(file, logxSourceDir)) ||
+		if ok && ((!strings.HasPrefix(file, logxSourceDir) && !strings.Contains(file, "logs.go") &&
+			!strings.Contains(file, "gorm")) ||
 			strings.HasSuffix(file, "_test.go")) {
 			return file + ":" + strconv.FormatInt(int64(line), 10)
 		}
